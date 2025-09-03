@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mystic Number Engine</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h1 { color: purple; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #eee; }
+    button { padding: 6px 10px; margin: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>🔮 Mystic Number Engine</h1>
+  <button onclick="generate()">🔁 Refresh Result</button>
+  <button onclick="clearAll()">🗑 Hapus Semua</button>
+  
+  <table id="resultTable">
+    <thead>
+      <tr>
+        <th>Source</th>
+        <th>Data</th>
+        <th>Angka</th>
+        <th>Tafsir</th>
+        <th>Mirip</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function fetchAPI(endpoint) {
+      try {
+        const res = await fetch(endpoint);
+        return await res.json();
+      } catch (err) {
+        return { error: err.message };
+      }
+    }
+
+    function toNumber(str) {
+      let sum = 0;
+      for (let i = 0; i < str.length; i++) sum += str.charCodeAt(i);
+      return (sum % 10000).toString().padStart(4, "0");
+    }
+
+    function tafsirAngka(num) {
+      if (num.includes("88")) return "💰 Rejeki & kekayaan";
+      if (num.includes("77")) return "✨ Spiritual & doa";
+      if (num.includes("44")) return "🛡 Perlindungan";
+      if (num.includes("11")) return "🌙 Intuisi & mimpi";
+      return "⚡ Energi umum";
+    }
+
+    function loadResults() {
+      const saved = JSON.parse(localStorage.getItem("results") || "[]");
+      const tbody = document.querySelector("#resultTable tbody");
+      tbody.innerHTML = "";
+      saved.forEach((row, i) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${row.source}</td>
+            <td>${row.data}</td>
+            <td>${row.num}</td>
+            <td>${row.tafsir}</td>
+            <td>${row.mirip}</td>
+            <td><button onclick="deleteRow(${i})">Hapus</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    function deleteRow(i) {
+      const saved = JSON.parse(localStorage.getItem("results") || "[]");
+      saved.splice(i, 1);
+      localStorage.setItem("results", JSON.stringify(saved));
+      loadResults();
+    }
+
+    function clearAll() {
+      localStorage.removeItem("results");
+      loadResults();
+    }
+
+    async function generate() {
+      const sources = [
+        { name: "Horoscope", url: "/api/horoscope?zodiac=leo&type=daily" },
+        { name: "Google", url: "/api/google?query=Nike" },
+        { name: "TikTok", url: "/api/tiktok?product_id=601226" },
+        { name: "Dream", url: "/api/dream?symbol=Snake" }
+      ];
+
+      const results = [];
+      for (let s of sources) {
+        const data = await fetchAPI(s.url);
+        const str = typeof data === "object" ? JSON.stringify(data).slice(0, 100) : String(data).slice(0, 100);
+        const num = toNumber(str);
+        const tafsir = tafsirAngka(num);
+
+        results.push({
+          source: s.name,
+          data: str,
+          num,
+          tafsir,
+          mirip: "TBD"
+        });
+      }
+
+      const saved = JSON.parse(localStorage.getItem("results") || "[]");
+      results.forEach(r => {
+        r.mirip = saved.find(s => s.num === r.num)?.num || "-";
+        saved.push(r);
+      });
+      localStorage.setItem("results", JSON.stringify(saved));
+      loadResults();
+    }
+
+    window.onload = () => {
+      generate();
+      loadResults();
+    };
+  </script>
+</body>
+</html>
